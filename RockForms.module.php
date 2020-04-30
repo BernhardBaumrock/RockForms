@@ -1,11 +1,17 @@
 <?php namespace ProcessWire;
 /**
  * ProcessWire Frontend Forms using Nette Forms Package
+ * 
+ * // TODO: CSRF protection
+ * // TODO: Honeypots
+ * // TODO: Form upload
  *
  * @author Bernhard Baumrock, 30.04.2020
  * @license Licensed under MIT
  * @link https://www.baumrock.com
  */
+// see https://github.com/nette/forms/issues/214
+ini_set('session.use_strict_mode', 1);
 class RockForms extends WireData implements Module, ConfigurableModule {
   
   /** @var WireArray */
@@ -27,14 +33,31 @@ class RockForms extends WireData implements Module, ConfigurableModule {
   public function init() {
     $this->loadAssets();
   }
+  
+  /**
+   * Add hookable proxy methods for RockFormsRenderer
+   */
+  public function ___hookBefore(...$args) {}
+  public function ___hookAfter(...$args) {
+    return $args[2];
+  }
 
   /**
    * Return a new Nette Form
    */
-  public function form() {
+  public function form($options = []) {
     $this->modules->get('RockNette')->load();
     require_once("RockForm.php");
-    $form = new RockForm($this);
+    require_once('RockFormsRenderer.php');
+
+    // prepare options
+    $opt = $this->wire(new WireData()); /** @var WireData $opt */
+    $opt->setArray([
+      'honeypots' => ['comment', 'message'],
+    ]); // defaults
+    $opt->setArray($options); // user options
+
+    $form = new RockForm($this, $opt);
     return $form;
   }
 
@@ -55,6 +78,13 @@ class RockForms extends WireData implements Module, ConfigurableModule {
       }
 
     }
+  }
+
+  /**
+   * Add honeypots to form
+   */
+  public function ___addHoneypots($form) {
+    $form->addHoneypots();
   }
 
   /**

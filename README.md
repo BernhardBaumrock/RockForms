@@ -6,7 +6,7 @@ ProcessWire Frontend Forms using Nette Forms Package
 
 Some may know that I've already built a module using the Nette Forms Package. Some may also know that there's a great PRO module for building forms: [FormBuilder](https://processwire.com/store/form-builder/). Some may also know that there's a [great thread about how to build forms using the PW forms API](https://processwire.com/talk/topic/2089-create-simple-forms-using-api/). And finally some may know the great [Nette Framework](https://doc.nette.org/) and its [Forms Package](https://doc.nette.org/en/3.0/forms) - see especially the docs about [standalone forms](https://doc.nette.org/en/3.0/forms#toc-standalone-forms).
 
-This module tries to combine the best of both worlds: ProcessWire on the one hand (like translation tools, creating pages etc.) and NetteForms on the other (for its great client- and server-side validation).
+This module tries to combine the best of both worlds: ProcessWire on the one hand (like translation tools, creating pages etc.) and NetteForms on the other (for its great client- and server-side validation). As great as Nette Forms are, as much am I missing the power of ProcessWire hooks there. That's why RockForms comes with a custom form renderer that triggers a hookable method call on the `RockForms` object.
 
 ## Features
 
@@ -102,38 +102,73 @@ $wire->addHookAfter("RockForms::getDirs", function($event) {
 
 ### Renderers
 
-Creating custom renderers is easy as cake. See the uikit renderer as an example. Applying this renderer to a form is also easy:
+As mentioned above `RockForms` comes with a custom renderer that adds hook magic to nette forms. This renderer replaces the `DefaultFormRenderer` of Nette with `RockFormsRenderer`. Not enough you can also modify this renderer easily and add custom renderers for any CSS framework you like. See the `uikit` renderer as an example!
+
+Setting the renderer modifications:
 
 ```php
-$form->setRenderer('uikit');
+$form->_setRenderer('uikit');
 ```
 
 See https://doc.nette.org/en/3.0/form-rendering for detailed instructions.
 
-## Modifications before rendering the form
+### Hooking a RockForm
 
-It is very likely that you want to customize your forms before rendering and we don't want to always create a renderer for this simple task. In ProcessWire we have hooks for that, but unfortunately we have no hooks in Nette Forms. That's why every `RockForm` comes with two magic properties called `beforeRender` and `afterRender`:
+A RockForm extends a Nette Form object and is therefore by default not hookable, but thanks to the custom Renderer and the hookable proxy method we get hooking powers for all render methods of the form. The structure of the HookEvent is a little bit different to regular PW hooks, because the `$event->object` is always the `RockForms` object - the master module, not the form itself!
 
 ```php
-$form->beforeRender = function($form) {
-  $form->getControl('send')->addClass('uk-button-primary uk-button-small');
-  $form->getLabel('password')->addClass('uk-text-danger');
-};
-$form->afterRender = function(&$html) {
-  $html .= "<div>hooked</div>";
-};
+$form->addHookBefore("renderPair", function($event) {
+  bd($event->arguments(), 'render Pair');
+});
+```
+![img](https://i.imgur.com/sJHEx77.png)
+
+Modifying form controls:
+
+```php
+$form->addHookBefore("render", function($event) {
+  $form = $event->object;
+  $form->getLabel('mail')->addClass('uk-margin-right');
+  $form->getControl('submit')->addClass('uk-button-primary uk-button-small uk-margin-small-top');
+});
 ```
 
-![img](https://i.imgur.com/0Oocp6N.png)
-
-Note two things:
-1) We are modifying `$html` by reference in the `afterRender` call
-2) `getControl()` and `getLabel()` are two shortcut methods added via RockForms that do actually call the more verbose Nette API methods
+Note that the `getLabel()` and `getControl()` methods are added via RockForms and not part of Nette! The more verbose Nette way of doing this would be:
 
 ```php
-$form->getComponent('send')->getControlPrototype()->addClass('uk-button-primary uk-button-small');
-$form->getComponent('password')->getLabelPrototype()->addClass('uk-text-danger');
+$form->getComponent('mail')->getLabelPrototype()->addClass('uk-margin-right');
+$form->getComponent('submit')->getControlPrototype()->addClass('uk-button-primary uk-button-small uk-margin-small-top');
 ```
 
 See https://api.nette.org/3.0/Nette/Forms/Form.html and https://api.nette.org/3.0/Nette/Utils/Html.html.
 
+You can also easily modify the markup of the whole rendered form:
+
+```php
+$form->addHookAfter('render', function($event) {
+  $form = $event->return;
+  $event->return = "<h1>My Form</h1>$form<div>end of form</div>";
+});
+```
+
+Until now everything was quite easy, but sometimes we want to modify the whole wrapper of a form control. We can set the global wrapper settings via `$renderer->wrappers['foo']['bar']` but then all wrappers would change. Using hooks it is a little verbose but possible:
+
+```php
+$wrappers = $form->getRenderer()->wrappers;
+$form->addHookBefore("renderPair", function($event) use($wrappers) {
+  $component = $event->arguments(0);
+  $renderer = $event->object->getRenderer();
+  $renderer->wrappers = $wrappers; // reset wrapper on every component
+  if($component->name !== 'foo') return;
+  $renderer->wrappers['pair']['container'] = "tr style='outline: 1px solid red;'";
+});
+```
+![img](https://i.imgur.com/4fDOFTn.png)
+
+### Manual form rendering
+
+See https://github.com/nette/forms/tree/master/examples.
+
+## Honeypot
+
+// TODO
