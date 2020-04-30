@@ -7,6 +7,9 @@
  * @link https://www.baumrock.com
  */
 class RockForms extends WireData implements Module, ConfigurableModule {
+  
+  /** @var WireArray */
+  public $renderers = [];
 
   public static function getModuleInfo() {
     return [
@@ -22,6 +25,7 @@ class RockForms extends WireData implements Module, ConfigurableModule {
   }
 
   public function init() {
+    $this->loadAssets();
   }
 
   /**
@@ -35,10 +39,54 @@ class RockForms extends WireData implements Module, ConfigurableModule {
   }
 
   /**
+   * Load renderers
+   */
+  public function loadAssets() {
+    $files = $this->wire->files;
+    $opt = ['extensions' => ['php']];
+    $form = $this->form();
+    
+    foreach($this->getDirs() as $dir) {
+      $dir = rtrim($dir, "/")."/";
+      
+      // renderers
+      foreach($files->find($dir."renderers", $opt) as $file) {
+        $this->renderers[$this->getFileName($file)] = $file;
+      }
+
+    }
+  }
+
+  /**
+   * Get file name of file
+   * @return string
+   */
+  public function getFileName($file) {
+    return pathinfo($file)['filename'];
+  }
+
+  /**
+   * Get directories to scan for assets
+   * Assets can be form renderers or form setups
+   */
+  public function ___getDirs() {
+    return [
+      $this->config->paths($this)."assets",
+      $this->config->paths->assets."RockForms",
+    ];
+  }
+
+  /**
   * Config inputfields
   * @param InputfieldWrapper $inputfields
   */
   public function getModuleConfigInputfields($inputfields) {
     return $inputfields;
+  }
+
+  public function __debugInfo() {
+    return [
+      'renderers' => $this->renderers,
+    ];
   }
 }

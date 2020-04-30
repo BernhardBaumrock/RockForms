@@ -88,4 +88,52 @@ See https://doc.nette.org/en/3.0/form-validation and https://doc.nette.org/en/3.
 
 See https://doc.nette.org/en/3.0/form-fields for a list of all available fields.
 
-## Custom Inputfield markup
+## Form assets
+
+Form assets are loaded from `/site/modules/RockForms/assets/` and `/site/assets/RockForms/` by default. You can add custom directories via hook:
+
+```php
+$wire->addHookAfter("RockForms::getDirs", function($event) {
+  $event->return = array_merge($event->return, [
+    $this->config->paths->templates."foo",
+  ]);
+});
+```
+
+### Renderers
+
+Creating custom renderers is easy as cake. See the uikit renderer as an example. Applying this renderer to a form is also easy:
+
+```php
+$form->setRenderer('uikit');
+```
+
+See https://doc.nette.org/en/3.0/form-rendering for detailed instructions.
+
+## Modifications before rendering the form
+
+It is very likely that you want to customize your forms before rendering and we don't want to always create a renderer for this simple task. In ProcessWire we have hooks for that, but unfortunately we have no hooks in Nette Forms. That's why every `RockForm` comes with two magic properties called `beforeRender` and `afterRender`:
+
+```php
+$form->beforeRender = function($form) {
+  $form->getControl('send')->addClass('uk-button-primary uk-button-small');
+  $form->getLabel('password')->addClass('uk-text-danger');
+};
+$form->afterRender = function(&$html) {
+  $html .= "<div>hooked</div>";
+};
+```
+
+![img](https://i.imgur.com/0Oocp6N.png)
+
+Note two things:
+1) We are modifying `$html` by reference in the `afterRender` call
+2) `getControl()` and `getLabel()` are two shortcut methods added via RockForms that do actually call the more verbose Nette API methods
+
+```php
+$form->getComponent('send')->getControlPrototype()->addClass('uk-button-primary uk-button-small');
+$form->getComponent('password')->getLabelPrototype()->addClass('uk-text-danger');
+```
+
+See https://api.nette.org/3.0/Nette/Forms/Form.html and https://api.nette.org/3.0/Nette/Utils/Html.html.
+
