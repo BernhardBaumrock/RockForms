@@ -11,7 +11,7 @@ class RockForm extends Form {
     parent::__construct($name);
     $this->forms = $forms;
     $this->wire = $forms->wire;
-    $this->getElementPrototype()->addClass('RockForm');
+    $this->getElementPrototype()->addClass("RockForm $name");
     $this->options = $options;
 
     // set the RockForms renderer
