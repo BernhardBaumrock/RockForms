@@ -8,10 +8,11 @@
 
 // setup customization variables
 $tableClass = $vars->tableClass ?? 'uk-table uk-table-small';
+$tdClass = $vars->tdClass ?? '';
 
 // set wrappers
 $renderer->wrappers['controls']['container'] = "table class='$tableClass'";
-$renderer->wrappers['label']['container'] = "td";
+$renderer->wrappers['label']['container'] = "td class='$tdClass'";
 
 // modify controls
 foreach($form->getComponents() as $component) {
