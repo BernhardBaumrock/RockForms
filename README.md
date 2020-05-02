@@ -10,14 +10,14 @@ This module tries to combine the best of both worlds: ProcessWire on the one han
 
 ## Features
 
+* CSRF protection
+* Field value restore
 * Have predefined renderers (eg. for Uikit)
 * Render multiple forms on one page
 * Easy AJAX forms
-* Easy customization of the markup
+* Full control over markup
 * Easy integration of analytics
 * Easy creation of PW pages from form submissions
-* Provide shortcuts for render hooks
-* Provide shortcuts for rendering custom HTML
 * Live JS validation helper
 
 ## Installation
@@ -102,7 +102,7 @@ $wire->addHookAfter("RockForms::getDirs", function($event) {
 
 ### Renderers
 
-As mentioned above `RockForms` comes with a custom renderer that adds hook magic to nette forms. This renderer replaces the `DefaultFormRenderer` of Nette with `RockFormsRenderer`. Not enough you can also modify this renderer easily and add custom renderers for any CSS framework you like. See the `uikit` renderer as an example!
+As mentioned above `RockForms` comes with a custom renderer that adds hook magic to nette forms. This renderer replaces the `DefaultFormRenderer` of Nette with `RockFormsRenderer`. You can also modify this renderer easily and add custom renderers for any CSS framework you like. See the `uikit` renderer as an example!
 
 Setting the renderer modifications:
 
@@ -110,11 +110,35 @@ Setting the renderer modifications:
 $form->_setRenderer('uikit');
 ```
 
+You can even use variables to make your customizer customizable:
+
+```php
+$form->_setRenderer('uikit', [
+  'foo' => 'bar',
+]);
+```
+
 See https://doc.nette.org/en/3.0/form-rendering for detailed instructions.
 
 ### Hooking a RockForm
 
-A RockForm extends a Nette Form object and is therefore by default not hookable, but thanks to the custom Renderer and the hookable proxy method we get hooking powers for all render methods of the form. The structure of the HookEvent is a little bit different to regular PW hooks, because the `$event->object` is always the `RockForms` object - the master module, not the form itself!
+A RockForm extends a Nette Form object and is therefore by default **not** hookable, but thanks to the custom Renderer and the hookable proxy method we get hooking powers for all render methods of the form. Important note: The structure of the hook arguments is a little different, because the hookable method actually lives in the RockForms module. That means that the $event->object would always be the RockForms module and not the RockForm instance. When using the `$form->addHookBefore()` and `$form->addHookAfter()` methods (directly on the RockForm object), then the HookEvent will automatically be modified so that the syntax is the same as a in a regular hook. This means that the hook is only fired for this single instance of a RockForm!
+
+If you wanted to hook all render calls of any RockForm, you'd need to hook the RockForms module:
+
+```php
+$wire->addHook("RockForms::hookAfter", function($event) {
+  $rockforms = $event->object;
+  $form = $event->arguments(0);
+  $method = $event->arguments(1);
+  if($method !== 'renderBegin') return;
+  bd($event, "renderBegin");
+});
+```
+
+![img](https://i.imgur.com/gl4yZ74.png)
+
+When you hook the `RockForm` object you get a regular HookEvent structure, though some features may not work (eg $event->replace):
 
 ```php
 $form->addHookBefore("renderPair", function($event) {

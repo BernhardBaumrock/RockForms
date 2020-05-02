@@ -5,8 +5,10 @@ class RockForm extends Form {
   public $forms;
   public $options;
   public $rendererName;
+  public $rendererVars;
 
-  public function __construct($forms, $options) {
+  public function __construct($forms, $options, $name) {
+    parent::__construct($name);
     $this->forms = $forms;
     $this->wire = $forms->wire;
     $this->getElementPrototype()->addClass('RockForm');
@@ -24,8 +26,9 @@ class RockForm extends Form {
   /**
    * Apply given renderer to form
    */
-  public function _setRenderer(string $name) {
+  public function _setRenderer(string $name, $vars = []) {
     $this->rendererName = $name;
+    $this->rendererVars = $vars;
   }
 
   /**
@@ -90,9 +93,16 @@ class RockForm extends Form {
     // apply custom renderer if one was set
     $renderers = $this->forms->renderers;
     if($name = $this->rendererName AND array_key_exists($name, $renderers)) {
-      $form = $this;
-      $renderer = $this->getRenderer();
-      include($renderers[$name]);
+      try {
+        $vars = $this->wire->wire(new WireData()); /** @var WireData $vars */
+        $this->wire->files->include($renderers[$name], [
+          'form' => $this,
+          'renderer' => $this->getRenderer(),
+          'vars' => $vars->setArray($this->rendererVars),
+        ]);
+      } catch (\Throwable $th) {
+        $this->wire->log($th);
+      }
     }
     return parent::__toString();
   }

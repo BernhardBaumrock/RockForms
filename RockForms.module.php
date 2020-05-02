@@ -45,7 +45,7 @@ class RockForms extends WireData implements Module, ConfigurableModule {
   /**
    * Return a new Nette Form
    */
-  public function form($options = []) {
+  public function form($name, $options = []) {
     $this->modules->get('RockNette')->load();
     require_once("RockForm.php");
     require_once('RockFormsRenderer.php');
@@ -57,7 +57,7 @@ class RockForms extends WireData implements Module, ConfigurableModule {
     ]); // defaults
     $opt->setArray($options); // user options
 
-    $form = new RockForm($this, $opt);
+    $form = new RockForm($this, $opt, $name);
     return $form;
   }
 
@@ -67,7 +67,7 @@ class RockForms extends WireData implements Module, ConfigurableModule {
   public function loadAssets() {
     $files = $this->wire->files;
     $opt = ['extensions' => ['php']];
-    $form = $this->form();
+    $form = $this->form(uniqid());
     
     foreach($this->getDirs() as $dir) {
       $dir = rtrim($dir, "/")."/";
