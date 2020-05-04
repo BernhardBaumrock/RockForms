@@ -11,7 +11,6 @@
  * @link https://www.baumrock.com
  */
 // see https://github.com/nette/forms/issues/214
-ini_set('session.use_strict_mode', 1);
 class RockForms extends WireData implements Module, ConfigurableModule {
   
   /** @var WireArray */

@@ -90,6 +90,10 @@ class RockForm extends Form {
    * Render this form when requested as string (eg echo)
    */
   public function __toString(): string {
+    if(!ini_get('session.use_strict_mode')) {
+      return "Please add this line to your config.php:<br>"
+        ."ini_set('session.use_strict_mode', 1);";
+    }
     // apply custom renderer if one was set
     $renderers = $this->forms->renderers;
     if($name = $this->rendererName AND array_key_exists($name, $renderers)) {
