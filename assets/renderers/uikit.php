@@ -7,7 +7,7 @@
 // bd($vars);
 
 // setup customization variables
-$tableClass = $vars->tableClass ?? 'uk-table uk-table-small';
+$tableClass = $vars->tableClass ?? 'uk-table uk-table-small uk-table-responsive';
 $tdClass = $vars->tdClass ?? '';
 
 // set wrappers
